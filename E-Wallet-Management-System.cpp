@@ -6,6 +6,7 @@ public:
     string name;
     string email;
     double balance;
+    User() : name(""), email(""), balance(0) {}
     User(string name, string email)
     {
         this->name = name;
