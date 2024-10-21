@@ -1,12 +1,16 @@
 #include <bits/stdc++.h>
 using namespace std;
+//Define the class with two constructor 
+//this class make a user define data type
 class User
 {
 public:
     string name;
     string email;
     double balance;
+    //default constructor 
     User() : name(""), email(""), balance(0) {}
+    //constructor taking argument
     User(string name, string email)
     {
         this->name = name;
@@ -14,12 +18,15 @@ public:
         this->balance = 0;
     }
 };
+//this class is used to use data type of above class for storing the data in systematic manner
 class EWallet
 {
 private:
+//giving high level of security for the details of customer
     unordered_map<string, User> users;
 
 public:
+//this function is used to register new customer with unique gmail address
     void registerUser(const string &name, const string &email)
     {
         if (users.find(email) == users.end())
@@ -30,6 +37,7 @@ public:
         else
             cout << "User exist already" << endl;
     }
+    //this function is use to add money to the wallet 
     void addMoney(const string email, double amt)
     {
         if (users.find(email) != users.end())
@@ -40,6 +48,7 @@ public:
         else
             cout << "user not found" << endl;
     }
+    //this function is use to send money from one wallet to another wallet
     void sendmoney(string from_email, string to_email, double amt)
     {
         if (users.find(from_email) != users.end())
@@ -61,6 +70,7 @@ public:
         else
             cout << "User is not found\nInvalid email" << endl;
     }
+    //this function is use to show avalible money into the wallet
     void viewbalance(string email)
     {
         if (users.find(email) != users.end())
@@ -73,11 +83,13 @@ public:
 };
 int main()
 {
+    //creating object 
     EWallet wallet;
+    //choice variable is use in switch case to perform different functions accoding to the user 
     int choice;
     string name, email, toEmail;
     double amount;
-
+//we use do while loop to use loop at least ones
     do
     {
         cout << "E-Wallet Management System\n";
