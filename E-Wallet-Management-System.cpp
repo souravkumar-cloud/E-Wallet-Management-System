@@ -1,4 +1,7 @@
-#include <bits/stdc++.h>
+#include <iostream>
+#include <unordered_map>
+#include <string>
+
 using namespace std;
 //Define the class with two constructor 
 //this class make a user define data type
