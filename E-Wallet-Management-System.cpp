@@ -1,111 +1,165 @@
 #include <iostream>
 #include <unordered_map>
+#include <vector>
 #include <string>
+#include <algorithm>
 
 using namespace std;
-//Define the class with two constructor 
-//this class make a user define data type
-class User
-{
-public:
+
+// Utility function to convert string to lowercase
+string toLower(const string& str) {
+    string result = str;
+    transform(result.begin(), result.end(), result.begin(), ::tolower);
+    return result;
+}
+
+// Class representing a User with private fields and improved encapsulation
+class User {
+private:
     string name;
     string email;
     double balance;
-    //default constructor 
+    vector<string> transactionHistory;
+
+public:
+    // Constructors
     User() : name(""), email(""), balance(0) {}
-    //constructor taking argument
-    User(string name, string email)
-    {
-        this->name = name;
-        this->email = email;
-        this->balance = 0;
+    User(const string& name, const string& email) : name(name), email(email), balance(0) {}
+
+    // Getters
+    string getName() const { return name; }
+    string getEmail() const { return email; }
+    double getBalance() const { return balance; }
+
+    // Balance management methods
+    void addBalance(double amount) {
+        balance += amount;
+        addTransaction("Added $" + to_string(amount) + " to wallet");
+    }
+
+    bool deductBalance(double amount) {
+        if (balance >= amount) {
+            balance -= amount;
+            addTransaction("Deducted $" + to_string(amount) + " from wallet");
+            return true;
+        }
+        return false;
+    }
+
+    // Transaction history methods
+    void addTransaction(const string& transaction) {
+        transactionHistory.push_back(transaction);
+    }
+
+    void showTransactions() const {
+        if (transactionHistory.empty()) {
+            cout << "No transactions found.\n";
+        } else {
+            cout << "Transaction History for " << email << ":\n";
+            for (const auto& transaction : transactionHistory) {
+                cout << "- " << transaction << endl;
+            }
+        }
     }
 };
-//this class is used to use data type of above class for storing the data in systematic manner
-class EWallet
-{
+
+// Class for EWallet system
+class EWallet {
 private:
-//giving high level of security for the details of customer
     unordered_map<string, User> users;
 
 public:
-//this function is used to register new customer with unique gmail address
-    void registerUser(const string &name, const string &email)
-    {
-        if (users.find(email) == users.end())
-        {
-            users[email] = User(name, email);
-            cout << "User registered sucessfully" << endl;
+    // Register a new user with unique email
+    void registerUser(const string& name, const string& email) {
+        string lowerEmail = toLower(email);
+        if (users.find(lowerEmail) == users.end()) {
+            users[lowerEmail] = User(name, lowerEmail);
+            cout << "User registered successfully.\n";
+        } else {
+            cout << "User with this email already exists.\n";
         }
-        else
-            cout << "User exist already" << endl;
     }
-    //this function is use to add money to the wallet 
-    void addMoney(const string email, double amt)
-    {
-        if (users.find(email) != users.end())
-        {
-            users[email].balance += amt;
-            cout << "Added $" << amt << "to" << email << "s' wallet" << endl;
+
+    // Add money to the user's wallet
+    void addMoney(const string& email, double amt) {
+        string lowerEmail = toLower(email);
+        if (amt <= 0) {
+            cout << "Invalid amount. Please enter a positive amount.\n";
+            return;
         }
-        else
-            cout << "user not found" << endl;
+        if (users.find(lowerEmail) != users.end()) {
+            users[lowerEmail].addBalance(amt);
+            cout << "Added $" << amt << " to " << email << "'s wallet.\n";
+        } else {
+            cout << "User not found.\n";
+        }
     }
-    //this function is use to send money from one wallet to another wallet
-    void sendmoney(string from_email, string to_email, double amt)
-    {
-        if (users.find(from_email) != users.end())
-        {
-            if (users.find(to_email) != users.end())
-            {
-                if (users[from_email].balance >= amt)
-                {
-                    users[from_email].balance -= amt;
-                    users[to_email].balance += amt;
-                    cout << "Transfered $ " << amt << " from " << from_email << "to" << to_email << endl;
-                }
-                else
-                    cout << "insufficents balance" << endl;
+
+    // Transfer money between users
+    void sendMoney(const string& from_email, const string& to_email, double amt) {
+        string lowerFromEmail = toLower(from_email);
+        string lowerToEmail = toLower(to_email);
+
+        if (amt <= 0) {
+            cout << "Invalid amount. Please enter a positive amount to transfer.\n";
+            return;
+        }
+
+        if (users.find(lowerFromEmail) != users.end() && users.find(lowerToEmail) != users.end()) {
+            if (users[lowerFromEmail].deductBalance(amt)) {
+                users[lowerToEmail].addBalance(amt);
+                users[lowerFromEmail].addTransaction("Transferred $" + to_string(amt) + " to " + to_email);
+                users[lowerToEmail].addTransaction("Received $" + to_string(amt) + " from " + from_email);
+                cout << "Transferred $" << amt << " from " << from_email << " to " << to_email << ".\n";
+            } else {
+                cout << "Insufficient balance.\n";
             }
-            else
-                cout << "Recipient not found" << endl;
+        } else {
+            cout << "Sender or recipient not found.\n";
         }
-        else
-            cout << "User is not found\nInvalid email" << endl;
     }
-    //this function is use to show avalible money into the wallet
-    void viewbalance(string email)
-    {
-        if (users.find(email) != users.end())
-        {
-            cout << "The Balance from " << email << " is " << users[email].balance << endl;
+
+    // View balance of a user
+    void viewBalance(const string& email) const {
+        string lowerEmail = toLower(email);
+        auto it = users.find(lowerEmail);
+        if (it != users.end()) {
+            cout << "Balance for " << email << " is $" << it->second.getBalance() << endl;
+        } else {
+            cout << "Invalid email.\n";
         }
-        else
-            cout << "Invalid email " << endl;
+    }
+
+    // View transaction history of a user
+    void viewTransactions(const string& email) const {
+        string lowerEmail = toLower(email);
+        auto it = users.find(lowerEmail);
+        if (it != users.end()) {
+            it->second.showTransactions();
+        } else {
+            cout << "Invalid email.\n";
+        }
     }
 };
-int main()
-{
-    //creating object 
+
+int main() {
     EWallet wallet;
-    //choice variable is use in switch case to perform different functions accoding to the user 
     int choice;
     string name, email, toEmail;
     double amount;
-//we use do while loop to use loop at least ones
-    do
-    {
-        cout << "E-Wallet Management System\n";
+
+    do {
+        cout << "\nE-Wallet Management System\n";
         cout << "1. Register User\n";
         cout << "2. Add Funds\n";
         cout << "3. Transfer Funds\n";
         cout << "4. View Balance\n";
-        cout << "5. Exit\n";
+        cout << "5. View Transaction History\n";
+        cout << "6. Exit\n";
         cout << "Choose an option: ";
         cin >> choice;
 
-        switch (choice)
-        {
+        switch (choice) {
         case 1:
             cout << "Enter Name: ";
             cin >> name;
@@ -129,16 +183,22 @@ int main()
             cin >> toEmail;
             cout << "Enter Amount to Transfer: ";
             cin >> amount;
-            wallet.sendmoney(email, toEmail, amount);
+            wallet.sendMoney(email, toEmail, amount);
             break;
 
         case 4:
             cout << "Enter Email: ";
             cin >> email;
-            wallet.viewbalance(email);
+            wallet.viewBalance(email);
             break;
 
         case 5:
+            cout << "Enter Email: ";
+            cin >> email;
+            wallet.viewTransactions(email);
+            break;
+
+        case 6:
             cout << "Exiting...\n";
             break;
 
@@ -146,7 +206,7 @@ int main()
             cout << "Invalid option! Please try again.\n";
             break;
         }
-    } while (choice != 5);
+    } while (choice != 6);
 
     return 0;
 }
