@@ -24,7 +24,7 @@ private:
 
 public:
     // Constructors
-    User() : name(""), email(""), password(""), balance(0) {}
+    User() : name(""), email(""), balance(0) {}
     User(const string& name, const string& email, const string& password) 
         : name(name), email(email), password(password), balance(0) {}
 
@@ -33,9 +33,18 @@ public:
     string getEmail() const { return email; }
     double getBalance() const { return balance; }
 
-    // Password verification
-    bool verifyPassword(const string& inputPassword) const {
-        return password == inputPassword;
+    // Password management
+    bool checkPassword(const string& inputPassword) const {
+        return inputPassword == password;
+    }
+
+    void changePassword(const string& oldPassword, const string& newPassword) {
+        if (checkPassword(oldPassword)) {
+            password = newPassword;
+            cout << "Password changed successfully.\n";
+        } else {
+            cout << "Incorrect current password.\n";
+        }
     }
 
     // Balance management methods
@@ -87,6 +96,17 @@ public:
         }
     }
 
+    // Change password for a user
+    void changeUserPassword(const string& email, const string& oldPassword, const string& newPassword) {
+        string lowerEmail = toLower(email);
+        auto it = users.find(lowerEmail);
+        if (it != users.end()) {
+            it->second.changePassword(oldPassword, newPassword);
+        } else {
+            cout << "Invalid email.\n";
+        }
+    }
+
     // Add money to the user's wallet
     void addMoney(const string& email, double amt) {
         string lowerEmail = toLower(email);
@@ -103,7 +123,7 @@ public:
     }
 
     // Transfer money between users with password verification
-    void sendMoney(const string& from_email, const string& password, const string& to_email, double amt) {
+    void sendMoney(const string& from_email, const string& to_email, double amt, const string& password) {
         string lowerFromEmail = toLower(from_email);
         string lowerToEmail = toLower(to_email);
 
@@ -113,11 +133,10 @@ public:
         }
 
         if (users.find(lowerFromEmail) != users.end() && users.find(lowerToEmail) != users.end()) {
-            User& sender = users[lowerFromEmail];
-            if (sender.verifyPassword(password)) {
-                if (sender.deductBalance(amt)) {
+            if (users[lowerFromEmail].checkPassword(password)) {
+                if (users[lowerFromEmail].deductBalance(amt)) {
                     users[lowerToEmail].addBalance(amt);
-                    sender.addTransaction("Transferred $" + to_string(amt) + " to " + to_email);
+                    users[lowerFromEmail].addTransaction("Transferred $" + to_string(amt) + " to " + to_email);
                     users[lowerToEmail].addTransaction("Received $" + to_string(amt) + " from " + from_email);
                     cout << "Transferred $" << amt << " from " << from_email << " to " << to_email << ".\n";
                 } else {
@@ -136,9 +155,8 @@ public:
         string lowerEmail = toLower(email);
         auto it = users.find(lowerEmail);
         if (it != users.end()) {
-            const User& user = it->second;
-            if (user.verifyPassword(password)) {
-                cout << "Balance for " << email << " is $" << user.getBalance() << endl;
+            if (it->second.checkPassword(password)) {
+                cout << "Balance for " << email << " is $" << it->second.getBalance() << endl;
             } else {
                 cout << "Incorrect password.\n";
             }
@@ -147,14 +165,13 @@ public:
         }
     }
 
-    // View transaction history with password verification
+    // View transaction history of a user with password verification
     void viewTransactions(const string& email, const string& password) const {
         string lowerEmail = toLower(email);
         auto it = users.find(lowerEmail);
         if (it != users.end()) {
-            const User& user = it->second;
-            if (user.verifyPassword(password)) {
-                user.showTransactions();
+            if (it->second.checkPassword(password)) {
+                it->second.showTransactions();
             } else {
                 cout << "Incorrect password.\n";
             }
@@ -167,7 +184,7 @@ public:
 int main() {
     EWallet wallet;
     int choice;
-    string name, email, password, toEmail;
+    string name, email, toEmail, password, oldPassword, newPassword;
     double amount;
 
     do {
@@ -177,7 +194,8 @@ int main() {
         cout << "3. Transfer Funds\n";
         cout << "4. View Balance\n";
         cout << "5. View Transaction History\n";
-        cout << "6. Exit\n";
+        cout << "6. Change Password\n";
+        cout << "7. Exit\n";
         cout << "Choose an option: ";
         cin >> choice;
 
@@ -209,7 +227,7 @@ int main() {
             cin >> toEmail;
             cout << "Enter Amount to Transfer: ";
             cin >> amount;
-            wallet.sendMoney(email, password, toEmail, amount);
+            wallet.sendMoney(email, toEmail, amount, password);
             break;
 
         case 4:
@@ -229,6 +247,16 @@ int main() {
             break;
 
         case 6:
+            cout << "Enter Email: ";
+            cin >> email;
+            cout << "Enter Current Password: ";
+            cin >> oldPassword;
+            cout << "Enter New Password: ";
+            cin >> newPassword;
+            wallet.changeUserPassword(email, oldPassword, newPassword);
+            break;
+
+        case 7:
             cout << "Exiting...\n";
             break;
 
@@ -236,7 +264,7 @@ int main() {
             cout << "Invalid option! Please try again.\n";
             break;
         }
-    } while (choice != 6);
+    } while (choice != 7);
 
     return 0;
 }
