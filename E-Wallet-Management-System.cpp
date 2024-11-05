@@ -18,18 +18,25 @@ class User {
 private:
     string name;
     string email;
+    string password;
     double balance;
     vector<string> transactionHistory;
 
 public:
     // Constructors
-    User() : name(""), email(""), balance(0) {}
-    User(const string& name, const string& email) : name(name), email(email), balance(0) {}
+    User() : name(""), email(""), password(""), balance(0) {}
+    User(const string& name, const string& email, const string& password) 
+        : name(name), email(email), password(password), balance(0) {}
 
     // Getters
     string getName() const { return name; }
     string getEmail() const { return email; }
     double getBalance() const { return balance; }
+
+    // Password verification
+    bool verifyPassword(const string& inputPassword) const {
+        return password == inputPassword;
+    }
 
     // Balance management methods
     void addBalance(double amount) {
@@ -69,11 +76,11 @@ private:
     unordered_map<string, User> users;
 
 public:
-    // Register a new user with unique email
-    void registerUser(const string& name, const string& email) {
+    // Register a new user with unique email and password
+    void registerUser(const string& name, const string& email, const string& password) {
         string lowerEmail = toLower(email);
         if (users.find(lowerEmail) == users.end()) {
-            users[lowerEmail] = User(name, lowerEmail);
+            users[lowerEmail] = User(name, lowerEmail, password);
             cout << "User registered successfully.\n";
         } else {
             cout << "User with this email already exists.\n";
@@ -95,8 +102,8 @@ public:
         }
     }
 
-    // Transfer money between users
-    void sendMoney(const string& from_email, const string& to_email, double amt) {
+    // Transfer money between users with password verification
+    void sendMoney(const string& from_email, const string& password, const string& to_email, double amt) {
         string lowerFromEmail = toLower(from_email);
         string lowerToEmail = toLower(to_email);
 
@@ -106,36 +113,51 @@ public:
         }
 
         if (users.find(lowerFromEmail) != users.end() && users.find(lowerToEmail) != users.end()) {
-            if (users[lowerFromEmail].deductBalance(amt)) {
-                users[lowerToEmail].addBalance(amt);
-                users[lowerFromEmail].addTransaction("Transferred $" + to_string(amt) + " to " + to_email);
-                users[lowerToEmail].addTransaction("Received $" + to_string(amt) + " from " + from_email);
-                cout << "Transferred $" << amt << " from " << from_email << " to " << to_email << ".\n";
+            User& sender = users[lowerFromEmail];
+            if (sender.verifyPassword(password)) {
+                if (sender.deductBalance(amt)) {
+                    users[lowerToEmail].addBalance(amt);
+                    sender.addTransaction("Transferred $" + to_string(amt) + " to " + to_email);
+                    users[lowerToEmail].addTransaction("Received $" + to_string(amt) + " from " + from_email);
+                    cout << "Transferred $" << amt << " from " << from_email << " to " << to_email << ".\n";
+                } else {
+                    cout << "Insufficient balance.\n";
+                }
             } else {
-                cout << "Insufficient balance.\n";
+                cout << "Incorrect password.\n";
             }
         } else {
             cout << "Sender or recipient not found.\n";
         }
     }
 
-    // View balance of a user
-    void viewBalance(const string& email) const {
+    // View balance of a user with password verification
+    void viewBalance(const string& email, const string& password) const {
         string lowerEmail = toLower(email);
         auto it = users.find(lowerEmail);
         if (it != users.end()) {
-            cout << "Balance for " << email << " is $" << it->second.getBalance() << endl;
+            const User& user = it->second;
+            if (user.verifyPassword(password)) {
+                cout << "Balance for " << email << " is $" << user.getBalance() << endl;
+            } else {
+                cout << "Incorrect password.\n";
+            }
         } else {
             cout << "Invalid email.\n";
         }
     }
 
-    // View transaction history of a user
-    void viewTransactions(const string& email) const {
+    // View transaction history with password verification
+    void viewTransactions(const string& email, const string& password) const {
         string lowerEmail = toLower(email);
         auto it = users.find(lowerEmail);
         if (it != users.end()) {
-            it->second.showTransactions();
+            const User& user = it->second;
+            if (user.verifyPassword(password)) {
+                user.showTransactions();
+            } else {
+                cout << "Incorrect password.\n";
+            }
         } else {
             cout << "Invalid email.\n";
         }
@@ -145,7 +167,7 @@ public:
 int main() {
     EWallet wallet;
     int choice;
-    string name, email, toEmail;
+    string name, email, password, toEmail;
     double amount;
 
     do {
@@ -165,7 +187,9 @@ int main() {
             cin >> name;
             cout << "Enter Email: ";
             cin >> email;
-            wallet.registerUser(name, email);
+            cout << "Enter Password: ";
+            cin >> password;
+            wallet.registerUser(name, email, password);
             break;
 
         case 2:
@@ -179,23 +203,29 @@ int main() {
         case 3:
             cout << "Enter Your Email: ";
             cin >> email;
+            cout << "Enter Password: ";
+            cin >> password;
             cout << "Enter Recipient Email: ";
             cin >> toEmail;
             cout << "Enter Amount to Transfer: ";
             cin >> amount;
-            wallet.sendMoney(email, toEmail, amount);
+            wallet.sendMoney(email, password, toEmail, amount);
             break;
 
         case 4:
             cout << "Enter Email: ";
             cin >> email;
-            wallet.viewBalance(email);
+            cout << "Enter Password: ";
+            cin >> password;
+            wallet.viewBalance(email, password);
             break;
 
         case 5:
             cout << "Enter Email: ";
             cin >> email;
-            wallet.viewTransactions(email);
+            cout << "Enter Password: ";
+            cin >> password;
+            wallet.viewTransactions(email, password);
             break;
 
         case 6:
